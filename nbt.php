@@ -108,18 +108,29 @@ enum NBTTagType: int
 
 class NBTTag implements \JsonSerializable
 {
-    protected array $additionalMetadata = [];
-
-    public function __construct(protected NBTTagType $type, protected string $name, protected $payload)
+    public function __construct(protected NBTTagType $type, protected string $name, protected $payload, protected array $additionalMetadata = [])
     {
-        if ($type === NBTTagType::TAG_List) {
-            $this->additionalMetadata['listType'] = array_pop($this->payload);
-        }
+
     }
 
     public function getType(): NBTTagType
     {
         return $this->type;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getPayload(): array
+    {
+        return $this->payload;
+    }
+
+    public function getAdditionalMetadata(): array
+    {
+        return $this->additionalMetadata;
     }
 
     public function jsonSerialize(): mixed
@@ -249,18 +260,22 @@ class NBT
         $nameLength = unpack('n', substr($nbtStr, 1, 2))[1];
         $name = substr($nbtStr, 3, $nameLength);
         $data = substr($nbtStr, 3 + $nameLength);
+        $additionalMetadata = [];
 
         if (self::DEBUG) {
             echo(str_pad('> ', 2 + $iteration * 2, ' ', STR_PAD_LEFT) . "Parsing tag [{$tagId}] {$name}...\n");
         }
 
         $payload = self::parseTag($tag, $data, $iteration);
+        if ($tag === NBTTagType::TAG_List) {
+            $additionalMetadata['listType'] = array_pop($payload);
+        }
 
         if (self::DEBUG) {
             echo(str_pad('> ', 2 + $iteration * 2, ' ', STR_PAD_LEFT) . "[{$name}] Done.\n");
         }
 
-        return new NBTTag($tag, $name, $payload);
+        return new NBTTag($tag, $name, $payload, $additionalMetadata);
     }
 
     private static function parseTag(NBTTagType $tag, string $data, $iteration = 0): mixed
@@ -381,22 +396,210 @@ class NBT
             }
         }
     }
+
+    public static function parseSNBT(string $snbtStr): NBTTag
+    {
+        $snbtStr = trim($snbtStr);
+
+        return self::parseSNBTTag($snbtStr);
+    }
+
+    private static function parseSNBTTag(string $data, string $name = '', NBTTagType $forceType = null): NBTTag
+    {
+        $i = 0;
+        while ($data[$i] == ' ' || $data[$i] == "\t" || $data[$i] == "\n" || $data[$i] == "\r") {
+            $i++;
+        }
+
+        switch ($data[$i]) {
+            case '[':
+            {
+                $payload = [];
+
+                $j = $i + 1;
+                while ($data[$j] == ' ' || $data[$j] == "\t" || $data[$j] == "\n" || $data[$j] == "\r") {
+                    $j++;
+                }
+
+                $_tag = null;
+                if (($data[$j] == 'B' || $data[$j] == 'I' || $data[$j] == 'L') && $data[$j + 1] == ';') {
+                    switch ($data[$j]) {
+                        case 'B':
+                            $_tag = NBTTagType::TAG_Byte;
+                            break;
+
+                        case 'I':
+                            $_tag = NBTTagType::TAG_Int;
+                            break;
+
+                        case 'L':
+                            $_tag = NBTTagType::TAG_Long;
+                            break;
+                    }
+
+                    $j += 2;
+                }
+
+                $k = $j;
+                while ($data[$k] != ']') {
+                    while ($data[$k] == ' ' || $data[$k] == "\t" || $data[$k] == "\n" || $data[$k] == "\r") {
+                        $k++;
+                    }
+
+                    if ($data[$k] == ']') {
+                        break;
+                    }
+
+                    if ($data[$k] == ',') {
+                        $k++;
+                        continue;
+                    }
+
+                    $tag = self::parseSNBTTag(substr($data, $k), '', $_tag);
+                    $k += $tag->getAdditionalMetadata()['byteLength'];
+
+                    $payload[] = $tag;
+                }
+
+                switch (substr($data, $i + 1, 2)) {
+                    case 'B;':
+                        return new NBTTag(NBTTagType::TAG_Byte_Array, $name, $payload, ['byteLength' => $k - $i + 4]);
+
+                    case 'I;':
+                        return new NBTTag(NBTTagType::TAG_Int_Array, $name, $payload, ['byteLength' => $k - $i + 4]);
+
+                    case 'L;':
+                        return new NBTTag(NBTTagType::TAG_Long_Array, $name, $payload, ['byteLength' => $k - $i + 4]);
+                }
+
+                return new NBTTag(NBTTagType::TAG_List, $name, $payload, ['byteLength' => $k - $i + 2]);
+            }
+
+            case '{':
+            {
+                $payload = [];
+
+                $j = $i + 1;
+                while ($data[$j] != '}') {
+                    while ($data[$j] == ' ' || $data[$j] == "\t" || $data[$j] == "\n" || $data[$j] == "\r") {
+                        $j++;
+                    }
+
+                    if ($data[$j] == '}') {
+                        break;
+                    }
+
+                    if ($data[$j] == ',') {
+                        $j++;
+                        continue;
+                    }
+
+                    $k = $j;
+                    while ($data[$k] != ':') {
+                        $k++;
+                    }
+                    $tagName = substr($data, $j, $k - $j);
+
+                    $j = $k + 1;
+                    while ($data[$j] == ' ' || $data[$j] == "\t" || $data[$j] == "\n" || $data[$j] == "\r") {
+                        $j++;
+                    }
+
+                    $tag = self::parseSNBTTag(substr($data, $j), $tagName);
+                    $j += $tag->getAdditionalMetadata()['byteLength'];
+
+                    $payload[] = $tag;
+                }
+
+                return new NBTTag(NBTTagType::TAG_Compound, $name,$payload, ['byteLength' => $j - $i + 2]);
+            }
+
+            case '"':
+            {
+                $j = $i + 1;
+                while ($data[$j] != '"' || $data[$j - 1] == "\\") {
+                    $j++;
+                }
+
+                return new NBTTag(NBTTagType::TAG_String, $name, stripslashes(substr($data, $i + 1, $j - 1)), ['byteLength' => $j - 1 + 2]);
+            }
+
+            case "'":
+            {
+                $j = $i + 1;
+                while ($data[$j] != "'" || $data[$j - 1] == "\\") {
+                    $j++;
+                }
+
+                return new NBTTag(NBTTagType::TAG_String, $name, stripslashes(substr($data, $i + 1, $j - 1)), ['byteLength' => $j - 1 + 2]);
+            }
+
+            default:
+                $j = $i;
+
+                $k = $j + 1;
+                while (ctype_digit($data[$k]) || $data[$k] == '-' || $data[$k] == '+' || $data[$k] == '.') {
+                    $k++;
+                }
+
+                switch ($data[$k]) {
+                    case 'b':
+                    case 'B':
+                        return new NBTTag(NBTTagType::TAG_Byte, $name, (int) substr($data, $j, $k - $j), ['byteLength' => $k - $j + 1]);
+
+                    case 's':
+                    case 'S':
+                        return new NBTTag(NBTTagType::TAG_Short, $name, (int) substr($data, $j, $k - $j), ['byteLength' => $k - $j + 1]);
+
+                    case 'l':
+                    case 'L':
+                        return new NBTTag(NBTTagType::TAG_Long, $name, (int) substr($data, $j, $k - $j), ['byteLength' => $k - $j + 1]);
+
+                    case 'f':
+                    case 'F':
+                        return new NBTTag(NBTTagType::TAG_Float, $name, (float) substr($data, $j, $k - $j), ['byteLength' => $k - $j + 1]);
+
+                    case 'd':
+                    case 'D':
+                        return new NBTTag(NBTTagType::TAG_Double, $name, (float) substr($data, $j, $k - $j), ['byteLength' => $k - $j + 1]);
+                }
+
+                if (($forceType == NBTTagType::TAG_Int || $forceType == null) && ctype_digit(substr($data, $j, $k - $j))) {
+                    return new NBTTag(NBTTagType::TAG_Int, $name, (int) substr($data, $j, $k - $j), ['byteLength' => $k - $j]);
+                }
+
+                return new NBTTag(NBTTagType::TAG_Double, $name, (float) substr($data, $j, $k - $j), ['byteLength' => $k - $j]);
+        }
+
+        return new NBTTag(NBTTagType::TAG_End, $name, []);
+    }
 }
 
 if ($argc < 2) {
-    echo "Usage: {$argv[0]} <file>\n";
+    echo "Usage: {$argv[0]} [--snbt] <file>\n";
     exit(1);
 }
 
 $file = $argv[1];
 
+$snbt = false;
+if ($argv[1] == '--snbt') {
+    $snbt = true;
+    $file = $argv[2];
+}
+
 // Load the file
 $data = file_get_contents($file);
 
-// gzip decompress
-$data = gzdecode($data);
+if ($snbt) {
+    $nbt = NBT::parseSNBT($data);
+    print_r($nbt->__toString());
+} else {
+    // gzip decompress
+    $data = gzdecode($data);
 
-$nbt = NBT::parse($data);
-print_r($nbt->__toString());
+    $nbt = NBT::parse($data);
+    print_r($nbt->__toString());
+}
 
 exit(0);
