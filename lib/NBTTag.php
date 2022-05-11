@@ -16,37 +16,25 @@
  * limitations under the License.
  */
 
-namespace Modscleo4\NBT;
+namespace Modscleo4\NBT\Lib;
 
-require_once __DIR__ . '/vendor/autoload.php';
+abstract class NBTTag implements \JsonSerializable
+{
+    protected NBTTagType $type;
 
-use \Modscleo4\NBT\Lib\NBTParser;
+    public final function getType(): NBTTagType
+    {
+        return $this->type;
+    }
 
-if ($argc < 2) {
-    echo "Usage: {$argv[0]} [--snbt] <file>\n";
-    exit(1);
+    public abstract function jsonSerialize(): mixed;
+
+    protected abstract function toSNBT($iteration = 1): string;
+
+    public function __toString(): string
+    {
+        return $this->toSNBT();
+    }
+
+    public abstract function getByteLength(): int;
 }
-
-$file = $argv[1];
-
-$snbt = false;
-if ($argv[1] == '--snbt') {
-    $snbt = true;
-    $file = $argv[2];
-}
-
-// Load the file
-$data = file_get_contents($file);
-
-if ($snbt) {
-    $nbt = NBTParser::parseSNBT($data);
-    print($nbt);
-} else {
-    // gzip decompress
-    $data = gzdecode($data);
-
-    $nbt = NBTParser::parse($data);
-    print($nbt);
-}
-
-exit(0);

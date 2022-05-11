@@ -16,37 +16,20 @@
  * limitations under the License.
  */
 
-namespace Modscleo4\NBT;
+namespace Modscleo4\NBT\Lib\Tag;
 
-require_once __DIR__ . '/vendor/autoload.php';
+use Modscleo4\NBT\Lib\NBTNamedTag;
+use Modscleo4\NBT\Lib\NBTTagType;
 
-use \Modscleo4\NBT\Lib\NBTParser;
+/**
+ * @method int getPayload()
+ */
+class NBTTagByte extends NBTNamedTag
+{
+    protected NBTTagType $type = NBTTagType::TAG_Byte;
 
-if ($argc < 2) {
-    echo "Usage: {$argv[0]} [--snbt] <file>\n";
-    exit(1);
+    protected function toSNBT($iteration = 1): string
+    {
+        return $this->getPayload() . 'b';
+    }
 }
-
-$file = $argv[1];
-
-$snbt = false;
-if ($argv[1] == '--snbt') {
-    $snbt = true;
-    $file = $argv[2];
-}
-
-// Load the file
-$data = file_get_contents($file);
-
-if ($snbt) {
-    $nbt = NBTParser::parseSNBT($data);
-    print($nbt);
-} else {
-    // gzip decompress
-    $data = gzdecode($data);
-
-    $nbt = NBTParser::parse($data);
-    print($nbt);
-}
-
-exit(0);
