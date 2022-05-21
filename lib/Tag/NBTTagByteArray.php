@@ -28,13 +28,17 @@ class NBTTagByteArray extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Byte_Array;
 
-    protected function toSNBT($iteration = 1): string
+    protected function toSNBT(bool $format = true, $iteration = 1): string
     {
-        return "[B;\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $this->getPayload()) . "\n]";
+        if (!$format) {
+            return '[B;' . implode(',', $this->getPayload()) . ']';
+        }
+
+        return "[B;\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $this->getPayload()) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "]";
     }
 
     public function getPayloadSize(): int
     {
-        return 2 + count($this->getPayload());
+        return 4 + count($this->getPayload());
     }
 }

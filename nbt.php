@@ -23,30 +23,47 @@ require_once __DIR__ . '/vendor/autoload.php';
 use \Modscleo4\NBT\Lib\NBTParser;
 
 if ($argc < 2) {
-    echo "Usage: {$argv[0]} [--snbt] <file>\n";
+    echo "Usage: {$argv[0]} [--snbt] [--out <file>] [--debug] [--no-format] <file>\n";
     exit(1);
 }
 
-$file = $argv[1];
+$i = 1;
+$args = getopt('', ['snbt', 'out::', 'debug', 'no-format'], $i);
 
-$snbt = false;
-if ($argv[1] == '--snbt') {
-    $snbt = true;
-    $file = $argv[2];
-}
+$file = $argv[$i];
+
+$snbt = array_key_exists('snbt', $args);
+$print = !array_key_exists('out', $args);
+$debug = array_key_exists('debug', $args);
+$format = !array_key_exists('no-format', $args);
 
 // Load the file
 $data = file_get_contents($file);
 
+/** @var NBTTag */
+$nbt = null;
+
+NBTParser::$DEBUG = $debug;
+NBTParser::$FORMAT = $format;
+
 if ($snbt) {
     $nbt = NBTParser::parseSNBT($data);
-    print($nbt);
 } else {
     // gzip decompress
     $data = gzdecode($data);
 
     $nbt = NBTParser::parse($data);
+}
+
+if ($print) {
     print($nbt);
+} else {
+    $f = $args['out'];
+    if (!$f) {
+        $f = $file . '.snbt';
+    }
+
+    file_put_contents($f, $nbt);
 }
 
 exit(0);

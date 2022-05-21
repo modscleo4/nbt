@@ -28,9 +28,13 @@ class NBTTagLongArray extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Long_Array;
 
-    protected function toSNBT($iteration = 1): string
+    protected function toSNBT(bool $format = true, $iteration = 1): string
     {
-        return "[L;\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $this->getPayload()) . "\n]";
+        if (!$format) {
+            return '[L;' . implode(',', $this->getPayload()) . ']';
+        }
+
+        return "[L;\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $this->getPayload()) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "]";
     }
 
     public function getPayloadSize(): int

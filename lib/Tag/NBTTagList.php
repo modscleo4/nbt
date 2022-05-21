@@ -29,15 +29,21 @@ class NBTTagList extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_List;
 
-    protected function toSNBT($iteration = 1): string
+    protected function toSNBT(bool $format = true, $iteration = 1): string
     {
-        return "[\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), array_map(function ($tag) use ($iteration) {
+        $content = array_map(function ($tag) use ($format, $iteration) {
             if ($tag instanceof NBTTag) {
-                return $tag->toSNBT($iteration + 1);
+                return $tag->toSNBT($format, $iteration + 1);
             }
 
             return '' . $tag;
-        }, $this->getPayload())) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "]";
+        }, $this->getPayload());
+
+        if (!$format) {
+            return '[' . implode(',', $content) . ']';
+        }
+
+        return "[\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $content) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "]";
     }
 
     public function getPayloadSize(): int

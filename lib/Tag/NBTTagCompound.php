@@ -28,13 +28,19 @@ class NBTTagCompound extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Compound;
 
-    protected function toSNBT($iteration = 1): string
+    protected function toSNBT(bool $format = true, $iteration = 1): string
     {
-        return "{\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), array_map(function ($tag) use ($iteration) {
-            return $tag->getName() . ': ' . $tag->toSNBT($iteration + 1);
+        $content = array_map(function (NBTNamedTag $tag) use ($format, $iteration) {
+            return $tag->getName() . ':' . ($format ? ' ' : '') . $tag->toSNBT($format, $iteration + 1);
         }, array_filter($this->getPayload(), function ($tag) {
             return !($tag instanceof NBTTagEnd);
-        }))) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "}";
+        }));
+
+        if (!$format) {
+            return '{' . implode(',', $content) . '}';
+        }
+
+        return "{\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $content) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "}";
     }
 
     public function getPayloadSize(): int

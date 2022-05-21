@@ -32,7 +32,7 @@ class NBTTagEnd extends NBTTag
         ];
     }
 
-    protected function toSNBT($iteration = 1): string
+    protected function toSNBT(bool $format = true, $iteration = 1): string
     {
         return '';
     }

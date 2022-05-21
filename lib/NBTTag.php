@@ -29,11 +29,11 @@ abstract class NBTTag implements \JsonSerializable
 
     public abstract function jsonSerialize(): mixed;
 
-    protected abstract function toSNBT($iteration = 1): string;
+    protected abstract function toSNBT(bool $format = true, $iteration = 1): string;
 
     public function __toString(): string
     {
-        return $this->toSNBT();
+        return $this->toSNBT(NBTParser::$FORMAT);
     }
 
     public abstract function getByteLength(): int;
