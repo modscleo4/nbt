@@ -32,9 +32,14 @@ class NBTTagEnd extends NBTTag
         ];
     }
 
-    protected function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, $iteration = 1): string
     {
         return '';
+    }
+
+    public function toBinary(): string
+    {
+        return pack('C', $this->type->value);
     }
 
     public function getByteLength(): int

@@ -23,12 +23,12 @@ require_once __DIR__ . '/vendor/autoload.php';
 use \Modscleo4\NBT\Lib\NBTParser;
 
 if ($argc < 2) {
-    echo "Usage: {$argv[0]} [--snbt] [--out <file>] [--debug] [--no-format] <file>\n";
+    echo "Usage: {$argv[0]} [--snbt] [--out=<file>] [--debug] [--no-format] [--bin] <file>\n";
     exit(1);
 }
 
 $i = 1;
-$args = getopt('', ['snbt', 'out::', 'debug', 'no-format'], $i);
+$args = getopt('', ['snbt', 'out::', 'debug', 'no-format', 'bin'], $i);
 
 $file = $argv[$i];
 
@@ -36,6 +36,7 @@ $snbt = array_key_exists('snbt', $args);
 $print = !array_key_exists('out', $args);
 $debug = array_key_exists('debug', $args);
 $format = !array_key_exists('no-format', $args);
+$bin = array_key_exists('bin', $args);
 
 // Load the file
 $data = file_get_contents($file);
@@ -55,12 +56,16 @@ if ($snbt) {
     $nbt = NBTParser::parse($data);
 }
 
+if ($bin) { // GZip compressed NBT Binary format
+    $nbt = gzencode($nbt->toBinary(), 7);
+}
+
 if ($print) {
     print($nbt);
 } else {
     $f = $args['out'];
     if (!$f) {
-        $f = $file . '.snbt';
+        $f = $file . ($bin ? '.dat' : '.snbt');
     }
 
     file_put_contents($f, $nbt);

@@ -28,8 +28,13 @@ class NBTTagInt extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Int;
 
-    protected function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, $iteration = 1): string
     {
         return $this->getPayload() . '';
+    }
+
+    protected function payloadAsBinary(): string
+    {
+        return strrev(pack('l', $this->getPayload()));
     }
 }

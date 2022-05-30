@@ -29,7 +29,7 @@ class NBTTagList extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_List;
 
-    protected function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, $iteration = 1): string
     {
         $content = array_map(function ($tag) use ($format, $iteration) {
             if ($tag instanceof NBTTag) {
@@ -44,6 +44,16 @@ class NBTTagList extends NBTNamedTag
         }
 
         return "[\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $content) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "]";
+    }
+
+    protected function payloadAsBinary(): string
+    {
+        /** @var NBTTagType */
+        $listType = $this->getAdditionalMetadata()['listType'];
+
+        return pack('C', $listType->value) . strrev(pack('l', sizeof($this->getPayload()))) . implode('', array_map(function (NBTNamedTag $value) {
+            return $value->payloadAsBinary();
+        }, $this->getPayload()));
     }
 
     public function getPayloadSize(): int

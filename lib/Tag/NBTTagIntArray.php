@@ -28,13 +28,20 @@ class NBTTagIntArray extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Int_Array;
 
-    protected function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, $iteration = 1): string
     {
         if (!$format) {
             return '[I;' . implode(',', $this->getPayload()) . ']';
         }
 
         return "[I;\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $this->getPayload()) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "]";
+    }
+
+    protected function payloadAsBinary(): string
+    {
+        return strrev(pack('l', sizeof($this->getPayload()))) . implode('', array_map(function (NBTNamedTag $value) {
+            return $value->payloadAsBinary();
+        }, $this->getPayload()));
     }
 
     public function getPayloadSize(): int

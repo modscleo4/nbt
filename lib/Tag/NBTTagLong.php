@@ -28,8 +28,13 @@ class NBTTagLong extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Long;
 
-    protected function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, $iteration = 1): string
     {
         return $this->getPayload() . 'l';
+    }
+
+    protected function payloadAsBinary(): string
+    {
+        return strrev(pack('q', $this->getPayload()));
     }
 }

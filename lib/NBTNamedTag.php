@@ -57,4 +57,11 @@ abstract class NBTNamedTag extends NBTTag
     {
         return 1 + 2 + strlen($this->name ?? "") + $this->getPayloadSize();
     }
+
+    protected abstract function payloadAsBinary(): string;
+
+    public function toBinary(): string
+    {
+        return pack('C', $this->type->value) . pack('n', strlen($this->name ?? "")) . $this->name . $this->payloadAsBinary();
+    }
 }

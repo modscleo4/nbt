@@ -29,7 +29,9 @@ abstract class NBTTag implements \JsonSerializable
 
     public abstract function jsonSerialize(): mixed;
 
-    protected abstract function toSNBT(bool $format = true, $iteration = 1): string;
+    public abstract function toSNBT(bool $format = true, $iteration = 1): string;
+
+    public abstract function toBinary(): string;
 
     public function __toString(): string
     {

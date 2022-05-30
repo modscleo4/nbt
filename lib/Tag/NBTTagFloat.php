@@ -28,8 +28,13 @@ class NBTTagFloat extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Float;
 
-    protected function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, $iteration = 1): string
     {
         return $this->getPayload() . 'f';
+    }
+
+    protected function payloadAsBinary(): string
+    {
+        return pack('G', $this->getPayload());
     }
 }

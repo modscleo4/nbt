@@ -28,10 +28,10 @@ class NBTTagCompound extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Compound;
 
-    protected function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, $iteration = 1): string
     {
         $content = array_map(function (NBTNamedTag $tag) use ($format, $iteration) {
-            return $tag->getName() . ':' . ($format ? ' ' : '') . $tag->toSNBT($format, $iteration + 1);
+            return (preg_match('/[ :]/', $tag->getName()) ? '"' . $tag->getName() . '"' : $tag->getName()) . ':' . ($format ? ' ' : '') . $tag->toSNBT($format, $iteration + 1);
         }, array_filter($this->getPayload(), function ($tag) {
             return !($tag instanceof NBTTagEnd);
         }));
@@ -41,6 +41,13 @@ class NBTTagCompound extends NBTNamedTag
         }
 
         return "{\n" . str_pad('', $iteration * 2, ' ') . implode(",\n" . str_pad('', $iteration * 2, ' '), $content) . "\n" . str_pad('', ($iteration - 1) * 2, ' ') . "}";
+    }
+
+    protected function payloadAsBinary(): string
+    {
+        return implode('', array_map(function (NBTNamedTag|NBTTagEnd $value) {
+            return $value->toBinary();
+        }, $this->getPayload()));
     }
 
     public function getPayloadSize(): int
