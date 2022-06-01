@@ -29,7 +29,7 @@ abstract class NBTTag implements \JsonSerializable
 
     public abstract function jsonSerialize(): mixed;
 
-    public abstract function toSNBT(bool $format = true, $iteration = 1): string;
+    public abstract function toSNBT(bool $format = true, int $iteration = 1): string;
 
     public abstract function toBinary(): string;
 

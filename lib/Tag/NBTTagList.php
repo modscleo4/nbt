@@ -29,7 +29,7 @@ class NBTTagList extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_List;
 
-    public function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, int $iteration = 1): string
     {
         $content = array_map(function ($tag) use ($format, $iteration) {
             if ($tag instanceof NBTTag) {
@@ -62,5 +62,23 @@ class NBTTagList extends NBTNamedTag
             // List elements don't have neither type nor name
             return $carry + $item->getByteLength() - 1 - 2;
         }, 0);
+    }
+
+    public function get(int $index): NBTNamedTag
+    {
+        if ($index < 0 || $index >= count($this->getPayload())) {
+            throw new \OutOfBoundsException('Index out of bounds');
+        }
+
+        return $this->getPayload()[$index];
+    }
+
+    public function set(int $index, $value)
+    {
+        if ($index < 0 || $index >= count($this->getPayload())) {
+            throw new \OutOfBoundsException('Index out of bounds');
+        }
+
+        $this->getPayload()[$index] = $value;
     }
 }

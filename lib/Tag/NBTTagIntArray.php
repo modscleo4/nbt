@@ -28,7 +28,7 @@ class NBTTagIntArray extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_Int_Array;
 
-    public function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, int $iteration = 1): string
     {
         if (!$format) {
             return '[I;' . implode(',', $this->getPayload()) . ']';

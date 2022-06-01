@@ -28,7 +28,7 @@ class NBTTagString extends NBTNamedTag
 {
     protected NBTTagType $type = NBTTagType::TAG_String;
 
-    public function toSNBT(bool $format = true, $iteration = 1): string
+    public function toSNBT(bool $format = true, int $iteration = 1): string
     {
         return '"' . addslashes($this->getPayload()) . '"';
     }

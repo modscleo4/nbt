@@ -29,9 +29,19 @@ abstract class NBTNamedTag extends NBTTag
         return $this->name;
     }
 
+    protected final function setName($name): void
+    {
+        $this->name = $name;
+    }
+
     public final function getPayload(): mixed
     {
         return $this->payload;
+    }
+
+    protected final function setPayload($payload): void
+    {
+        $this->payload = $payload;
     }
 
     public final function getAdditionalMetadata(): array
