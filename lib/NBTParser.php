@@ -37,7 +37,7 @@ class NBTParser
     public static $DEBUG = false;
     public static $FORMAT = true;
 
-    public static function parse(string $nbtStr, $iteration = 0): NBTTag
+    public static function parse(string $nbtStr, int $iteration = 0): NBTTag
     {
         $tagId = unpack('C', $nbtStr[0])[1];
         $tag = NBTTagType::from($tagId);
@@ -156,11 +156,11 @@ class NBTParser
 
                 $i = 0;
                 while (($tag = self::parse(substr($data, $i), $iteration + 1))->getType() != NBTTagType::TAG_End) {
-                    $payload[] = $tag;
+                    /** @var NBTNamedTag $tag */
+
+                    $payload[$tag->getName()] = $tag;
                     $i += $tag->getByteLength();
                 }
-
-                $payload[] = new NBTTagEnd();
 
                 return new NBTTagCompound($name, $payload);
             }
@@ -327,10 +327,8 @@ class NBTParser
                         $tag = self::parseSNBTTag(substr($data, $j), $tagName, $iteration + 1);
                         $j += $tag->getAdditionalMetadata()['byteLength'];
 
-                        $payload[] = $tag;
+                        $payload[$tag->getName()] = $tag;
                     }
-
-                    $payload[] = new NBTTagEnd();
 
                     return new NBTTagCompound($name, $payload, ['byteLength' => $j - $i + 2]);
                 }

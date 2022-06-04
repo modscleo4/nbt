@@ -19,10 +19,11 @@
 namespace Modscleo4\NBT\Lib\Tag;
 
 use Modscleo4\NBT\Lib\NBTNamedTag;
+use Modscleo4\NBT\Lib\NBTParser;
 use Modscleo4\NBT\Lib\NBTTagType;
 
 /**
- * @method array getPayload()
+ * @method array<string, NBTNamedTag> getPayload()
  */
 class NBTTagCompound extends NBTNamedTag
 {
@@ -30,11 +31,10 @@ class NBTTagCompound extends NBTNamedTag
 
     public function toSNBT(bool $format = true, int $iteration = 1): string
     {
+        $payload = $this->getPayload();
         $content = array_map(function (NBTNamedTag $tag) use ($format, $iteration) {
             return (preg_match('/[ :]/', $tag->getName()) ? '"' . $tag->getName() . '"' : $tag->getName()) . ':' . ($format ? ' ' : '') . $tag->toSNBT($format, $iteration + 1);
-        }, array_filter($this->getPayload(), function ($tag) {
-            return !($tag instanceof NBTTagEnd);
-        }));
+        }, $payload);
 
         if (!$format) {
             return '{' . implode(',', $content) . '}';
@@ -45,94 +45,101 @@ class NBTTagCompound extends NBTNamedTag
 
     protected function payloadAsBinary(): string
     {
-        return implode('', array_map(function (NBTNamedTag|NBTTagEnd $value) {
-            return $value->toBinary();
-        }, $this->getPayload()));
+        $payload = $this->getPayload();
+        return implode('', array_map(function (NBTNamedTag $tag) {
+            return $tag->toBinary();
+        }, $payload)) . (new NBTTagEnd())->toBinary();
     }
 
     public function getPayloadSize(): int
     {
-        return array_reduce($this->getPayload(), function ($carry, $item) {
-            return $carry + $item->getByteLength();
-        }, 0);
+        $payload = $this->getPayload();
+        return array_reduce($payload, function (int $carry, NBTNamedTag $tag) {
+            return $carry + $tag->getByteLength();
+        }, (new NBTTagEnd)->getByteLength());
     }
 
     public function keys(): array
     {
+        $payload = $this->getPayload();
         return array_map(function (NBTNamedTag $tag) {
             return [
                 'name' => $tag->getName(),
                 'type' => $tag->getType()->asString()
             ];
-        }, array_filter($this->getPayload(), function ($tag) {
-            return !($tag instanceof NBTTagEnd);
-        }));
+        }, $payload);
     }
 
-    public function get(string $name): NBTNamedTag
+    public function get(string $_name): NBTNamedTag
     {
-        if (empty($name)) {
+        if (empty($_name)) {
             return $this;
         }
 
         $payload = $this->getPayload();
-        $parts = explode('.', $name);
+
+        $parts = explode('.', $_name);
         $part = array_shift($parts);
 
-        for ($i = 0; $i < count($payload); $i++) {
-            /** @var NBTNamedTag */
-            $tag = $payload[$i];
+        if (NBTParser::$DEBUG) {
+            echo "Looking for {$part}\n";
+        }
 
-            if (!($tag instanceof NBTTagEnd) && $tag->getName() === $part) {
-                if (count($parts) >= 1) {
-                    if (!($tag instanceof NBTTagCompound)) {
-                        throw new \InvalidArgumentException("Cannot get {$name}: [{$tag->getType()}]{$tag->getName()} is not a compound tag.");
-                    }
+        if (array_key_exists($part, $payload)) {
+            $tag = $payload[$part];
 
-                    return $tag->get(implode('.', $parts));
+            if (count($parts) >= 1) {
+                if (!($tag instanceof NBTTagCompound)) {
+                    throw new \InvalidArgumentException("Cannot get {$_name}: [{$tag->getType()->asString()}]{$tag->getName()} is not a compound tag.");
                 }
 
-                return $tag;
+                return $tag->get(implode('.', $parts));
             }
+
+            return $tag;
         }
 
-        throw new \Exception("Tag not found: $name");
+        throw new \Exception("Tag not found: $_name");
     }
 
-    public function set(string $name, NBTNamedTag $value)
+    public function set(string $_name, NBTNamedTag $value)
     {
-        if (empty($name)) {
+        if (empty($_name)) {
             return $this;
         }
 
-        $parts = explode('.', $name);
-        $part = array_shift($parts);
         $payload = $this->getPayload();
 
-        for ($i = 0; $i < count($payload); $i++) {
-            /** @var NBTNamedTag */
-            $tag = $payload[$i];
+        $parts = explode('.', $_name);
+        $part = array_shift($parts);
 
-            if (!($tag instanceof NBTTagEnd) && $tag->getName() === $part) {
-                if (count($parts) >= 1) {
-                    if (!($tag instanceof NBTTagCompound)) {
-                        throw new \InvalidArgumentException("Cannot set {$name}: [{$tag->getType()}]{$tag->getName()} is not a compound tag.");
-                    }
+        if (NBTParser::$DEBUG) {
+            echo "Looking for {$part}\n";
+        }
 
-                    $tag->set(implode('.', $parts), $value);
-                    return;
+        if (array_key_exists($part, $payload)) {
+            $tag = $payload[$part];
+
+            if (count($parts) >= 1) {
+                if (!($tag instanceof NBTTagCompound)) {
+                    throw new \InvalidArgumentException("Cannot set {$_name}: [{$tag->getType()->asString()}]{$tag->getName()} is not a compound tag.");
                 }
 
-                $value->setName($part);
-                $payload[$i] = $value;
-                $this->setPayload($payload);
+                $tag->set(implode('.', $parts), $value);
                 return;
             }
+
+            // Tag found, update its value
+            $value->setName($part);
+            $payload[$part] = $value;
+            $this->setPayload($payload);
+            return;
         }
 
+        // Tag not found, create a new one
         if (count($parts) === 0) {
             $value->setName($part);
-            $payload[] = $value;
+            $payload[$part] = $value;
             $this->setPayload($payload);
         }
     }

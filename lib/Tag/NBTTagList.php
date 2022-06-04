@@ -66,19 +66,23 @@ class NBTTagList extends NBTNamedTag
 
     public function get(int $index): NBTNamedTag
     {
-        if ($index < 0 || $index >= count($this->getPayload())) {
+        $payload = $this->getPayload();
+        if ($index < 0 || $index >= count($payload)) {
             throw new \OutOfBoundsException('Index out of bounds');
         }
 
-        return $this->getPayload()[$index];
+        return $payload[$index];
     }
 
     public function set(int $index, $value)
     {
-        if ($index < 0 || $index >= count($this->getPayload())) {
+        $payload = $this->getPayload();
+        if ($index < 0 || $index >= count($payload)) {
             throw new \OutOfBoundsException('Index out of bounds');
         }
 
-        $this->getPayload()[$index] = $value;
+        $payload[$index] = $value;
+
+        $this->setPayload($payload);
     }
 }
