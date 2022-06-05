@@ -21,6 +21,7 @@ namespace Modscleo4\NBT;
 require_once __DIR__ . '/vendor/autoload.php';
 
 use \Modscleo4\NBT\Lib\NBTParser;
+use Modscleo4\NBT\Lib\NBTUtils;
 
 if ($argc < 2) {
     echo "Usage: {$argv[0]} [--snbt] [--out=<file>] [--debug] [--no-format] [--bin] [--interactive] <file>\n";
@@ -82,9 +83,14 @@ if ($interactive) {
                         exit(1);
                     }
 
-                    $key = $parts[0] ?? '';
+                    if (empty($parts[0])) {
+                        $tag = $nbt;
+                    } else {
+                        $key = $parts[0];
 
-                    $tag = $nbt->get($key);
+                        $tag = $nbt->get($key);
+                    }
+
                     if (!($tag instanceof \Modscleo4\NBT\Lib\Tag\NBTTagCompound)) {
                         error_log('Cannot continue: tag is not Compound.');
                         break;
@@ -103,8 +109,13 @@ if ($interactive) {
                         exit(1);
                     }
 
-                    $key = $parts[0] ?? '';
-                    print($nbt->get($key) . "\n");
+                    if (!isset($parts[0])) {
+                        error_log('Cannot continue: missing key.');
+                        break;
+                    }
+
+                    $key = $parts[0];
+                    print(NBTUtils::getWalking($nbt, $key) . "\n");
 
                     break;
                 }
@@ -127,7 +138,9 @@ if ($interactive) {
 
                     $key = $parts[0];
                     $value = NBTParser::parseSNBT($parts[1]);
-                    print($nbt->set($key, $value) . "\n");
+                    NBTUtils::setWalking($nbt, $key, $value);
+
+                    print("\n");
 
                     break;
                 }

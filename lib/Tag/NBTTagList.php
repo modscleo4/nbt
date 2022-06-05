@@ -64,7 +64,7 @@ class NBTTagList extends NBTNamedTag
         }, 0);
     }
 
-    public function get(int $index): NBTNamedTag
+    public function &get(int $index): NBTNamedTag
     {
         $payload = $this->getPayload();
         if ($index < 0 || $index >= count($payload)) {
@@ -74,7 +74,7 @@ class NBTTagList extends NBTNamedTag
         return $payload[$index];
     }
 
-    public function set(int $index, $value)
+    public function set(int $index, NBTNamedTag $value)
     {
         $payload = $this->getPayload();
         if ($index < 0 || $index >= count($payload)) {

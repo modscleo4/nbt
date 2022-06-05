@@ -39,7 +39,7 @@ class NBTTagIntArray extends NBTNamedTag
 
     protected function payloadAsBinary(): string
     {
-        return strrev(pack('l', sizeof($this->getPayload()))) . implode('', array_map(function (NBTNamedTag $value) {
+        return strrev(pack('l', sizeof($this->getPayload()))) . implode('', array_map(function (NBTTagInt $value) {
             return $value->payloadAsBinary();
         }, $this->getPayload()));
     }
@@ -47,5 +47,27 @@ class NBTTagIntArray extends NBTNamedTag
     public function getPayloadSize(): int
     {
         return 4 + 4 * count($this->getPayload());
+    }
+
+    public function &get(int $index): NBTTagInt
+    {
+        $payload = $this->getPayload();
+        if ($index < 0 || $index >= count($payload)) {
+            throw new \OutOfBoundsException('Index out of bounds');
+        }
+
+        return $payload[$index];
+    }
+
+    public function set(int $index, NBTTagInt $value)
+    {
+        $payload = $this->getPayload();
+        if ($index < 0 || $index >= count($payload)) {
+            throw new \OutOfBoundsException('Index out of bounds');
+        }
+
+        $payload[$index] = $value;
+
+        $this->setPayload($payload);
     }
 }

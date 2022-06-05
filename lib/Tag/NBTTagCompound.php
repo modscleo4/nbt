@@ -19,7 +19,6 @@
 namespace Modscleo4\NBT\Lib\Tag;
 
 use Modscleo4\NBT\Lib\NBTNamedTag;
-use Modscleo4\NBT\Lib\NBTParser;
 use Modscleo4\NBT\Lib\NBTTagType;
 
 /**
@@ -70,77 +69,40 @@ class NBTTagCompound extends NBTNamedTag
         }, $payload);
     }
 
-    public function get(string $_name): NBTNamedTag
+    public function &get(string $name): NBTNamedTag
     {
-        if (empty($_name)) {
-            return $this;
+        if (empty($name)) {
+            throw new \InvalidArgumentException('Invalid key.');
         }
 
         $payload = $this->getPayload();
 
-        $parts = explode('.', $_name);
-        $part = array_shift($parts);
-
-        if (NBTParser::$DEBUG) {
-            echo "Looking for {$part}\n";
-        }
-
-        if (array_key_exists($part, $payload)) {
-            $tag = $payload[$part];
-
-            if (count($parts) >= 1) {
-                if (!($tag instanceof NBTTagCompound)) {
-                    throw new \InvalidArgumentException("Cannot get {$_name}: [{$tag->getType()->asString()}]{$tag->getName()} is not a compound tag.");
-                }
-
-                return $tag->get(implode('.', $parts));
-            }
-
+        if (array_key_exists($name, $payload)) {
+            $tag = $payload[$name];
             return $tag;
         }
 
-        throw new \Exception("Tag not found: $_name");
+        throw new \Exception("Tag not found: {$name}");
     }
 
-    public function set(string $_name, NBTNamedTag $value)
+    public function set(string $name, NBTNamedTag $value)
     {
-        if (empty($_name)) {
-            return $this;
+        if (empty($name)) {
+            throw new \InvalidArgumentException('Invalid key.');
         }
 
         $payload = $this->getPayload();
 
-        $parts = explode('.', $_name);
-        $part = array_shift($parts);
-
-        if (NBTParser::$DEBUG) {
-            echo "Looking for {$part}\n";
-        }
-
-        if (array_key_exists($part, $payload)) {
-            $tag = $payload[$part];
-
-            if (count($parts) >= 1) {
-                if (!($tag instanceof NBTTagCompound)) {
-                    throw new \InvalidArgumentException("Cannot set {$_name}: [{$tag->getType()->asString()}]{$tag->getName()} is not a compound tag.");
-                }
-
-                $tag->set(implode('.', $parts), $value);
-                return;
-            }
-
+        if (array_key_exists($name, $payload)) {
             // Tag found, update its value
-            $value->setName($part);
-            $payload[$part] = $value;
+            $payload[$name] = $value;
             $this->setPayload($payload);
             return;
         }
 
         // Tag not found, create a new one
-        if (count($parts) === 0) {
-            $value->setName($part);
-            $payload[$part] = $value;
-            $this->setPayload($payload);
-        }
+        $value->setName($name);
+        $payload[$name] = $value;
+        $this->setPayload($payload);
     }
 }

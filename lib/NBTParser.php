@@ -209,6 +209,8 @@ class NBTParser
      */
     private static function parseSNBTTag(string $data, string $name = '', int $iteration = 0, NBTTagType $forceType = null): NBTNamedTag
     {
+        $length = strlen($data);
+
         if (self::$DEBUG) {
             echo (str_pad('> ', 2 + $iteration * 2, ' ', STR_PAD_LEFT) . "Parsing tag" . (!empty($name) ? " [name={$name}]" : '') . "...\n");
         }
@@ -354,33 +356,35 @@ class NBTParser
                 default:
                     $j = $i;
 
-                    $k = $j + 1;
-                    while (ctype_digit($data[$k]) || $data[$k] === '-' || $data[$k] === '+' || $data[$k] === '.') {
+                    $k = $j;
+                    while ($k < $length && (ctype_digit($data[$k]) || $data[$k] === '-' || $data[$k] === '+' || $data[$k] === '.')) {
                         $k++;
                     }
 
                     $num = substr($data, $j, $k - $j);
 
-                    switch ($data[$k]) {
-                        case 'b':
-                        case 'B':
-                            return new NBTTagByte($name, (int) $num, ['byteLength' => $k - $j + 1]);
+                    if ($k < $length) {
+                        switch ($data[$k]) {
+                            case 'b':
+                            case 'B':
+                                return new NBTTagByte($name, (int) $num, ['byteLength' => $k - $j + 1]);
 
-                        case 's':
-                        case 'S':
-                            return new NBTTagShort($name, (int) $num, ['byteLength' => $k - $j + 1]);
+                            case 's':
+                            case 'S':
+                                return new NBTTagShort($name, (int) $num, ['byteLength' => $k - $j + 1]);
 
-                        case 'l':
-                        case 'L':
-                            return new NBTTagLong($name, (int) $num, ['byteLength' => $k - $j + 1]);
+                            case 'l':
+                            case 'L':
+                                return new NBTTagLong($name, (int) $num, ['byteLength' => $k - $j + 1]);
 
-                        case 'f':
-                        case 'F':
-                            return new NBTTagFloat($name, (float) $num, ['byteLength' => $k - $j + 1]);
+                            case 'f':
+                            case 'F':
+                                return new NBTTagFloat($name, (float) $num, ['byteLength' => $k - $j + 1]);
 
-                        case 'd':
-                        case 'D':
-                            return new NBTTagDouble($name, (float) $num, ['byteLength' => $k - $j + 1]);
+                            case 'd':
+                            case 'D':
+                                return new NBTTagDouble($name, (float) $num, ['byteLength' => $k - $j + 1]);
+                        }
                     }
 
                     if ($forceType === NBTTagType::TAG_Int || $forceType === null && is_int($num + 0)) {
